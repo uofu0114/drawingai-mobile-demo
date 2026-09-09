@@ -1,0 +1,1 @@
+GitHub Pages用。index.htmlをリポジトリ直下にアップロードしてください。チェック状態は各ブラウザのlocalStorageに保存されます。
