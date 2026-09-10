@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>展示会訪問管理</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f5f7fa;
+  color: #1f2937;
+}
+
+header {
+  background: #111827;
+  color: white;
+  padding: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+header h1 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.stats {
+  font-size: 14px;
+  opacity: .9;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 16px;
+}
+
+.panel {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+select,
+input,
+textarea {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 16px;
+  background: white;
+}
+
+textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.search {
+  margin-bottom: 10px;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.filter-btn {
+  flex: 1;
+  padding: 9px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.filter-btn.active {
+  background: #111827;
+  color: white;
+}
+
+.company-card {
+  background: white;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 7px rgba(0,0,0,.06);
+  cursor: pointer;
+  border-left: 5px solid #d1d5db;
+}
+
+.company-card.visited {
+  border-left-color: #16a34a;
+}
+
+.company-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.check {
+  font-size: 25px;
+  min-width: 28px;
+}
+
+.company-name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.company-meta {
+  color: #6b7280;
+  font-size: 13px;
+  margin-top: 5px;
+}
+
+.visit-info {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #166534;
+}
+
+.rating {
+  margin-top: 5px;
+}
+
+.empty {
+  text-align: center;
+  padding: 30px;
+  color: #6b7280;
+}
+
+.status {
+  padding: 10px;
+  background: #eef2ff;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 13px;
+}
+
+.modal-bg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 100;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.modal {
+  background: white;
+  max-width: 600px;
+  margin: 30px auto;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.modal h2 {
+  margin-top: 0;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.checkbox-row input {
+  width: auto;
+  transform: scale(1.3);
+}
+
+.buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+button {
+  cursor: pointer;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px;
+  border: 0;
+  border-radius: 9px;
+  font-size: 15px;
+}
+
+.btn-primary {
+  background: #111827;
+  color: white;
+}
+
+.btn-secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+@media (min-width: 700px) {
+  .container {
+    padding: 25px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>📋 展示会訪問管理</h1>
+  <div class="stats" id="stats">読み込み中...</div>
+</header>
+
+<div class="container">
+
+  <div class="panel">
+
+    <div class="form-group">
+      <label>展示会</label>
+      <select id="exhibitionSelect">
+        <option value="">読み込み中...</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <input
+        type="text"
+        id="search"
+        class="search"
+        placeholder="会社名・業種・ブースで検索"
+      >
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all">
+        すべて
+      </button>
+      <button class="filter-btn" data-filter="unvisited">
+        未訪問
+      </button>
+      <button class="filter-btn" data-filter="visited">
+        訪問済み
+      </button>
+    </div>
+
+  </div>
+
+  <div id="status"></div>
+
+  <div id="companyList"></div>
+
+</div>
+
+
+<!-- 詳細画面 -->
+
+<div class="modal-bg" id="modalBg">
+
+  <div class="modal">
+
+    <h2 id="modalCompanyName"></h2>
+
+    <div id="modalCompanyInfo"
+         style="font-size:13px;color:#6b7280;margin-bottom:20px;">
+    </div>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="visitedCheck">
+      <label for="visitedCheck" style="margin:0;">
+        訪問済み
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>訪問日時</label>
+      <input type="datetime-local" id="visitedAt">
+    </div>
+
+    <div class="form-group">
+      <label>評価</label>
+      <select id="rating">
+        <option value="">評価なし</option>
+        <option value="5">★★★★★ 非常に良い</option>
+        <option value="4">★★★★☆ 良い</option>
+        <option value="3">★★★☆☆ 普通</option>
+        <option value="2">★★☆☆☆ あまり興味なし</option>
+        <option value="1">★☆☆☆☆ 興味なし</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>担当者</label>
+      <input
+        type="text"
+        id="contactPerson"
+        placeholder="例：山田様"
+      >
+    </div>
+
+    <div class="form-group">
+      <label>次のアクション</label>
+      <select id="nextAction">
+        <option value="">なし</option>
+        <option value="資料確認">資料確認</option>
+        <option value="メール">メールする</option>
+        <option value="商談">商談につなげる</option>
+        <option value="再訪">再訪する</option>
+        <option value="社内共有">社内共有</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>コメント</label>
+      <textarea
+        id="comment"
+        placeholder="製品の特徴、話した内容、気になった点など"
+      ></textarea>
+    </div>
+
+    <div class="buttons">
+      <button class="btn btn-secondary" id="closeBtn">
+        閉じる
+      </button>
+
+      <button class="btn btn-primary" id="saveBtn">
+        保存する
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- Supabase -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+/* =====================================================
+   ここを変更してください
+   ===================================================== */
+
+const SUPABASE_URL = "https://qazmhhtakwutqtqxqhpa.supabase.co";
+ 
+
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_fzhFCjL_xqnqviPhFZornw_LIwaBDMT";
+
+
+/* =====================================================
+   以下は変更不要
+   ===================================================== */
+
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
+
+const state = {
+  exhibitions: [],
+  companies: [],
+  visits: new Map(),
+  selectedCompany: null,
+  filter: "all"
+};
+
+
+/* ---------- 初期処理 ---------- */
+
+async function init() {
+
+  if (
+    SUPABASE_URL.includes("ここに") ||
+    SUPABASE_PUBLISHABLE_KEY.includes("ここに")
+  ) {
+    showStatus(
+      "SupabaseのURLとPublishable keyを設定してください。",
+      true
+    );
+    return;
+  }
+
+  await loadExhibitions();
+}
+
+
+/* ---------- 展示会取得 ---------- */
+
+async function loadExhibitions() {
+
+  const { data, error } = await db
+    .from("exhibitions")
+    .select("id,name,event_date,location")
+    .order("event_date", { ascending: false });
+
+  if (error) {
+    showStatus("展示会の読み込みに失敗しました：" + error.message, true);
+    return;
+  }
+
+  state.exhibitions = data || [];
+
+  const select = document.getElementById("exhibitionSelect");
+
+  select.innerHTML = "";
+
+  if (state.exhibitions.length === 0) {
+
+    select.innerHTML =
+      '<option value="">展示会がありません</option>';
+
+    return;
+  }
+
+  state.exhibitions.forEach((exhibition) => {
+
+    const option = document.createElement("option");
+
+    option.value = exhibition.id;
+
+    option.textContent =
+      exhibition.name +
+      (exhibition.event_date
+        ? "　" + exhibition.event_date
+        : "");
+
+    select.appendChild(option);
+
+  });
+
+  select.value = state.exhibitions[0].id;
+
+  await loadCompanies();
+}
+
+
+/* ---------- 会社取得 ---------- */
+
+async function loadCompanies() {
+
+  const exhibitionId =
+    document.getElementById("exhibitionSelect").value;
+
+  if (!exhibitionId) return;
+
+  const { data, error } = await db
+    .from("companies")
+    .select(
+      "id,exhibition_id,company_name,booth,category,website"
+    )
+    .eq("exhibition_id", exhibitionId)
+    .order("company_name");
+
+  if (error) {
+    showStatus("会社情報の読み込みに失敗しました：" + error.message, true);
+    return;
+  }
+
+  state.companies = data || [];
+
+  await loadVisits();
+
+  renderCompanies();
+}
+
+
+/* ---------- 訪問情報取得 ---------- */
+
+async function loadVisits() {
+
+  state.visits.clear();
+
+  const companyIds =
+    state.companies.map(c => c.id);
+
+  if (companyIds.length === 0) {
+    return;
+  }
+
+  const { data, error } = await db
+    .from("visits")
+    .select(
+      "id,company_id,visited_at,rating,contact_person,comment,next_action"
+    )
+    .in("company_id", companyIds)
+    .order("visited_at", { ascending: false });
+
+  if (error) {
+    showStatus("訪問情報の読み込みに失敗しました：" + error.message, true);
+    return;
+  }
+
+  (data || []).forEach(visit => {
+
+    /*
+      同じ会社のデータが複数あった場合は
+      最初の1件を利用
+    */
+
+    if (!state.visits.has(visit.company_id)) {
+      state.visits.set(
+        visit.company_id,
+        visit
+      );
+    }
+
+  });
+}
+
+
+/* ---------- 一覧表示 ---------- */
+
+function renderCompanies() {
+
+  const list =
+    document.getElementById("companyList");
+
+  const search =
+    document.getElementById("search").value
+      .toLowerCase();
+
+  const filtered =
+    state.companies.filter(company => {
+
+      const visit =
+        state.visits.get(company.id);
+
+      const visited =
+        visit && visit.visited_at;
+
+      if (
+        state.filter === "visited" &&
+        !visited
+      ) {
+        return false;
+      }
+
+      if (
+        state.filter === "unvisited" &&
+        visited
+      ) {
+        return false;
+      }
+
+      const text =
+        (
+          company.company_name +
+          " " +
+          (company.booth || "") +
+          " " +
+          (company.category || "")
+        ).toLowerCase();
+
+      return text.includes(search);
+
+    });
+
+
+  if (filtered.length === 0) {
+
+    list.innerHTML =
+      '<div class="empty">該当する会社がありません</div>';
+
+    updateStats();
+
+    return;
+  }
+
+
+  list.innerHTML = filtered.map(company => {
+
+    const visit =
+      state.visits.get(company.id);
+
+    const visited =
+      visit && visit.visited_at;
+
+    const rating =
+      visit && visit.rating
+        ? "　" + "★".repeat(visit.rating)
+        : "";
+
+    const visitedText =
+      visited
+        ? "訪問済み　" + formatDateTime(visit.visited_at)
+        : "未訪問";
+
+    return `
+      <div
+        class="company-card ${visited ? "visited" : ""}"
+        data-company-id="${company.id}"
+      >
+
+        <div class="company-top">
+
+          <div class="check">
+            ${visited ? "✅" : "⬜"}
+          </div>
+
+          <div>
+
+            <div class="company-name">
+              ${escapeHtml(company.company_name)}
+            </div>
+
+            <div class="company-meta">
+              ${company.booth ? "ブース：" + escapeHtml(company.booth) : ""}
+              ${company.category ? "　" + escapeHtml(company.category) : ""}
+            </div>
+
+            <div class="visit-info">
+              ${visitedText}
+              ${rating}
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+  }).join("");
+
+
+  document.querySelectorAll(".company-card")
+    .forEach(card => {
+
+      card.addEventListener("click", () => {
+
+        const id =
+          Number(card.dataset.companyId);
+
+        openCompany(id);
+
+      });
+
+    });
+
+
+  updateStats();
+}
+
+
+/* ---------- 統計 ---------- */
+
+function updateStats() {
+
+  const total =
+    state.companies.length;
+
+  const visited =
+    state.companies.filter(company => {
+
+      const visit =
+        state.visits.get(company.id);
+
+      return visit && visit.visited_at;
+
+    }).length;
+
+  document.getElementById("stats").textContent =
+    `訪問済み ${visited} / ${total} 社　`;
+
+}
+
+
+/* ---------- 会社詳細 ---------- */
+
+function openCompany(companyId) {
+
+  const company =
+    state.companies.find(
+      c => c.id === companyId
+    );
+
+  if (!company) return;
+
+  state.selectedCompany = company;
+
+  const visit =
+    state.visits.get(companyId);
+
+
+  document.getElementById(
+    "modalCompanyName"
+  ).textContent =
+    company.company_name;
+
+
+  document.getElementById(
+    "modalCompanyInfo"
+  ).textContent =
+    [
+      company.booth
+        ? "ブース：" + company.booth
+        : "",
+
+      company.category
+        ? "業種：" + company.category
+        : ""
+    ]
+    .filter(Boolean)
+    .join("　");
+
+
+  document.getElementById(
+    "visitedCheck"
+  ).checked =
+    !!(visit && visit.visited_at);
+
+
+  document.getElementById(
+    "visitedAt"
+  ).value =
+    visit && visit.visited_at
+      ? toLocalInputValue(visit.visited_at)
+      : getNowLocal();
+
+
+  document.getElementById(
+    "rating"
+  ).value =
+    visit && visit.rating
+      ? visit.rating
+      : "";
+
+
+  document.getElementById(
+    "contactPerson"
+  ).value =
+    visit && visit.contact_person
+      ? visit.contact_person
+      : "";
+
+
+  document.getElementById(
+    "nextAction"
+  ).value =
+    visit && visit.next_action
+      ? visit.next_action
+      : "";
+
+
+  document.getElementById(
+    "comment"
+  ).value =
+    visit && visit.comment
+      ? visit.comment
+      : "";
+
+
+  document.getElementById(
+    "modalBg"
+  ).style.display = "block";
+}
+
+
+/* ---------- 保存 ---------- */
+
+async function saveVisit() {
+
+  const company =
+    state.selectedCompany;
+
+  if (!company) return;
+
+
+  const visited =
+    document.getElementById(
+      "visitedCheck"
+    ).checked;
+
+
+  const visitedAtInput =
+    document.getElementById(
+      "visitedAt"
+    ).value;
+
+
+  const existing =
+    state.visits.get(company.id);
+
+
+  const record = {
+
+    company_id: company.id,
+
+    visited_at:
+      visited
+        ? (
+            visitedAtInput
+              ? new Date(visitedAtInput).toISOString()
+              : new Date().toISOString()
+          )
+        : null,
+
+    rating:
+      document.getElementById("rating").value
+        ? Number(
+            document.getElementById("rating").value
+          )
+        : null,
+
+    contact_person:
+      document.getElementById(
+        "contactPerson"
+      ).value.trim(),
+
+    comment:
+      document.getElementById(
+        "comment"
+      ).value.trim(),
+
+    next_action:
+      document.getElementById(
+        "nextAction"
+      ).value
+
+  };
+
+
+  let result;
+
+
+  if (existing) {
+
+    result =
+      await db
+        .from("visits")
+        .update(record)
+        .eq("id", existing.id);
+
+  } else {
+
+    if (!visited) {
+
+      closeModal();
+
+      return;
+
+    }
+
+    result =
+      await db
+        .from("visits")
+        .insert(record);
+
+  }
+
+
+  if (result.error) {
+
+    alert(
+      "保存に失敗しました。\n" +
+      result.error.message
+    );
+
+    return;
+  }
+
+
+  await loadCompanies();
+
+  closeModal();
+
+}
+
+
+/* ---------- 日付 ---------- */
+
+function getNowLocal() {
+
+  const now = new Date();
+
+  now.setMinutes(
+    now.getMinutes() -
+    now.getTimezoneOffset()
+  );
+
+  return now
+    .toISOString()
+    .slice(0, 16);
+}
+
+
+function toLocalInputValue(value) {
+
+  const date =
+    new Date(value);
+
+  date.setMinutes(
+    date.getMinutes() -
+    date.getTimezoneOffset()
+  );
+
+  return date
+    .toISOString()
+    .slice(0, 16);
+}
+
+
+function formatDateTime(value) {
+
+  const date =
+    new Date(value);
+
+  return date.toLocaleString(
+    "ja-JP",
+    {
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
+}
+
+
+/* ---------- モーダル ---------- */
+
+function closeModal() {
+
+  document.getElementById(
+    "modalBg"
+  ).style.display = "none";
+
+  state.selectedCompany = null;
+}
+
+
+/* ---------- ステータス ---------- */
+
+function showStatus(message, error = false) {
+
+  const status =
+    document.getElementById("status");
+
+  status.className = "status";
+
+  status.textContent = message;
+
+  if (!error) {
+
+    setTimeout(() => {
+      status.textContent = "";
+      status.className = "";
+    }, 3000);
+
+  }
+
+}
+
+
+/* ---------- HTMLエスケープ ---------- */
+
+function escapeHtml(value) {
+
+  if (!value) return "";
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+}
+
+
+/* ---------- イベント ---------- */
+
+document
+  .getElementById("exhibitionSelect")
+  .addEventListener(
+    "change",
+    loadCompanies
+  );
+
+
+document
+  .getElementById("search")
+  .addEventListener(
+    "input",
+    renderCompanies
+  );
+
+
+document
+  .querySelectorAll(".filter-btn")
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        document
+          .querySelectorAll(".filter-btn")
+          .forEach(b =>
+            b.classList.remove("active")
+          );
+
+        button.classList.add("active");
+
+        state.filter =
+          button.dataset.filter;
+
+        renderCompanies();
+
+      }
+    );
+
+  });
+
+
+document
+  .getElementById("closeBtn")
+  .addEventListener(
+    "click",
+    closeModal
+  );
+
+
+document
+  .getElementById("saveBtn")
+  .addEventListener(
+    "click",
+    saveVisit
+  );
+
+
+document
+  .getElementById("modalBg")
+  .addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target.id === "modalBg"
+      ) {
+        closeModal();
+      }
+
+    }
+  );
+
+
+init();
+
+</script>
+
+</body>
+</html>
