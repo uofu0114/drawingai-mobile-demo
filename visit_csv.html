@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expo Log - 展示会訪問管理</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f5f7fa;
+  color: #1f2937;
+}
+
+header {
+  background: #111827;
+  color: white;
+  padding: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+header h1 {
+  margin: 0 0 6px;
+  font-size: 21px;
+}
+
+.stats {
+  font-size: 14px;
+  opacity: .9;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 16px;
+}
+
+.panel {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 16px;
+  background: white;
+}
+
+textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn {
+  border: 0;
+  border-radius: 9px;
+  padding: 12px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #111827;
+  color: white;
+}
+
+.btn-green {
+  background: #16a34a;
+  color: white;
+}
+
+.btn-secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.search {
+  margin-bottom: 10px;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-btn {
+  flex: 1;
+  padding: 9px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.filter-btn.active {
+  background: #111827;
+  color: white;
+}
+
+.company-card {
+  background: white;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 7px rgba(0,0,0,.06);
+  cursor: pointer;
+  border-left: 5px solid #d1d5db;
+}
+
+.company-card.visited {
+  border-left-color: #16a34a;
+}
+
+.company-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.check {
+  font-size: 25px;
+  min-width: 28px;
+}
+
+.company-name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.company-meta {
+  color: #6b7280;
+  font-size: 13px;
+  margin-top: 5px;
+}
+
+.visit-info {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #166534;
+}
+
+.empty {
+  text-align: center;
+  padding: 30px;
+  color: #6b7280;
+}
+
+.status {
+  padding: 10px;
+  background: #eef2ff;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 13px;
+}
+
+.modal-bg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 100;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.modal {
+  background: white;
+  max-width: 600px;
+  margin: 25px auto;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.modal h2 {
+  margin-top: 0;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.checkbox-row input {
+  width: auto;
+  transform: scale(1.3);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-buttons button {
+  flex: 1;
+}
+
+.close-x {
+  float: right;
+  font-size: 25px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+@media (min-width: 700px) {
+  .container {
+    padding: 25px;
+  }
+}
+
+.csv-help { font-size:13px; color:#6b7280; line-height:1.6; background:#f9fafb; padding:10px; border-radius:8px; margin-bottom:12px; }
+.csv-preview { overflow-x:auto; margin-top:12px; }
+.csv-preview table { width:100%; border-collapse:collapse; font-size:13px; }
+.csv-preview th, .csv-preview td { border:1px solid #e5e7eb; padding:7px; text-align:left; white-space:nowrap; }
+.csv-preview th { background:#f3f4f6; }
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>📋 Expo Log</h1>
+  <div class="stats" id="stats">
+    読み込み中...
+  </div>
+</header>
+
+
+<div class="container">
+
+  <!-- 展示会選択 -->
+
+  <div class="panel">
+
+    <div class="section-title">
+      展示会
+    </div>
+
+    <div class="form-group">
+
+      <select id="exhibitionSelect">
+        <option value="">読み込み中...</option>
+      </select>
+
+    </div>
+
+    <div class="action-buttons">
+
+      <button
+        class="btn btn-primary"
+        onclick="openExhibitionModal()">
+        ＋ 展示会を追加
+      </button>
+
+      <button
+        class="btn btn-green"
+        onclick="openCompanyModal()">
+        ＋ 訪問先を追加
+      </button>
+
+      <button
+        class="btn btn-secondary"
+        onclick="openCsvModal()">
+        📥 CSVから一括登録
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <div id="status"></div>
+
+
+  <!-- 検索・フィルター -->
+
+  <div class="panel">
+
+    <input
+      type="text"
+      id="search"
+      class="search"
+      placeholder="会社名・業種・ブースで検索">
+
+    <div class="filters">
+
+      <button
+        class="filter-btn active"
+        data-filter="all">
+        すべて
+      </button>
+
+      <button
+        class="filter-btn"
+        data-filter="unvisited">
+        未訪問
+      </button>
+
+      <button
+        class="filter-btn"
+        data-filter="visited">
+        訪問済み
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- 会社一覧 -->
+
+  <div id="companyList"></div>
+
+</div>
+
+
+
+<!-- =============================
+     展示会追加モーダル
+     ============================= -->
+
+<div class="modal-bg" id="exhibitionModal">
+
+  <div class="modal">
+
+    <span
+      class="close-x"
+      onclick="closeExhibitionModal()">
+      ×
+    </span>
+
+    <h2>新しい展示会</h2>
+
+    <div class="form-group">
+
+      <label>展示会名</label>
+
+      <input
+        id="newExhibitionName"
+        placeholder="例：Japan IT Week 2026">
+
+    </div>
+
+    <div class="form-group">
+
+      <label>開催日</label>
+
+      <input
+        type="date"
+        id="newExhibitionDate">
+
+    </div>
+
+    <div class="form-group">
+
+      <label>場所</label>
+
+      <input
+        id="newExhibitionLocation"
+        placeholder="例：幕張メッセ">
+
+    </div>
+
+    <div class="modal-buttons">
+
+      <button
+        class="btn btn-secondary"
+        onclick="closeExhibitionModal()">
+        キャンセル
+      </button>
+
+      <button
+        class="btn btn-primary"
+        onclick="addExhibition()">
+        登録する
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- =============================
+     訪問先追加モーダル
+     ============================= -->
+
+<div class="modal-bg" id="companyModal">
+
+  <div class="modal">
+
+    <span
+      class="close-x"
+      onclick="closeCompanyModal()">
+      ×
+    </span>
+
+    <h2>訪問先を追加</h2>
+
+    <div class="form-group">
+
+      <label>会社名 *</label>
+
+      <input
+        id="newCompanyName"
+        placeholder="例：株式会社○○">
+
+    </div>
+
+    <div class="form-group">
+
+      <label>ブース</label>
+
+      <input
+        id="newCompanyBooth"
+        placeholder="例：A-15">
+
+    </div>
+
+    <div class="form-group">
+
+      <label>カテゴリー</label>
+
+      <input
+        id="newCompanyCategory"
+        placeholder="例：AI・画像認識">
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Webサイト</label>
+
+      <input
+        id="newCompanyWebsite"
+        placeholder="https://example.com">
+
+    </div>
+
+    <div class="modal-buttons">
+
+      <button
+        class="btn btn-secondary"
+        onclick="closeCompanyModal()">
+        キャンセル
+      </button>
+
+      <button
+        class="btn btn-green"
+        onclick="addCompany()">
+        登録する
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- =============================
+     CSV一括登録モーダル
+     ============================= -->
+<div class="modal-bg" id="csvModal">
+  <div class="modal">
+    <span class="close-x" onclick="closeCsvModal()">×</span>
+    <h2>📥 CSVから一括登録</h2>
+    <div class="csv-help">
+      1行目を見出しにしてください。<br>
+      必須：<strong>会社名</strong><br>
+      任意：ブース、カテゴリー、Webサイト<br>
+      Excelの場合は「CSV UTF-8（コンマ区切り）」で保存してください。
+    </div>
+    <div class="modal-buttons" style="margin-top:0;margin-bottom:12px;">
+      <button class="btn btn-secondary" onclick="downloadCsvTemplate()">CSVテンプレート</button>
+    </div>
+    <div class="form-group">
+      <label>CSVファイル</label>
+      <input type="file" id="csvFile" accept=".csv,text/csv" onchange="handleCsvFile(event)">
+    </div>
+    <div id="csvSummary"></div>
+    <div id="csvPreview" class="csv-preview"></div>
+    <div class="modal-buttons">
+      <button class="btn btn-secondary" onclick="closeCsvModal()">キャンセル</button>
+      <button class="btn btn-primary" id="csvImportButton" onclick="importCsv()" disabled>登録する</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- =============================
+     会社詳細・訪問記録
+     ============================= -->
+
+<div class="modal-bg" id="detailModal">
+
+  <div class="modal">
+
+    <span
+      class="close-x"
+      onclick="closeDetailModal()">
+      ×
+    </span>
+
+    <h2 id="modalCompanyName"></h2>
+
+    <div
+      id="modalCompanyInfo"
+      style="font-size:13px;color:#6b7280;margin-bottom:20px;">
+    </div>
+
+
+    <div class="checkbox-row">
+
+      <input
+        type="checkbox"
+        id="visitedCheck">
+
+      <label
+        for="visitedCheck"
+        style="margin:0;">
+        訪問済み
+      </label>
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>訪問日時</label>
+
+      <input
+        type="datetime-local"
+        id="visitedAt">
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>評価</label>
+
+      <select id="rating">
+
+        <option value="">評価なし</option>
+
+        <option value="5">
+          ★★★★★ 非常に良い
+        </option>
+
+        <option value="4">
+          ★★★★☆ 良い
+        </option>
+
+        <option value="3">
+          ★★★☆☆ 普通
+        </option>
+
+        <option value="2">
+          ★★☆☆☆ あまり興味なし
+        </option>
+
+        <option value="1">
+          ★☆☆☆☆ 興味なし
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>担当者</label>
+
+      <input
+        id="contactPerson"
+        placeholder="例：山田様">
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>次のアクション</label>
+
+      <select id="nextAction">
+
+        <option value="">なし</option>
+        <option value="資料確認">資料確認</option>
+        <option value="メール">メールする</option>
+        <option value="商談">商談につなげる</option>
+        <option value="再訪">再訪する</option>
+        <option value="社内共有">社内共有</option>
+
+      </select>
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>コメント</label>
+
+      <textarea
+        id="comment"
+        placeholder="製品の特徴、話した内容、気になった点など">
+      </textarea>
+
+    </div>
+
+
+    <div class="modal-buttons">
+
+      <button
+        class="btn btn-secondary"
+        onclick="closeDetailModal()">
+        閉じる
+      </button>
+
+      <button
+        class="btn btn-primary"
+        onclick="saveVisit()">
+        保存する
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- Supabase -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+<script>
+
+/* =====================================================
+   Supabase設定
+   ===================================================== */
+
+const SUPABASE_URL =
+  "https://qazmhhtakwutqtqxqhpa.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_fzhFCjL_xqnqviPhFZornw_LIwaBDMT";
+
+
+/* =====================================================
+   Supabase接続
+   ===================================================== */
+
+const db =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
+
+
+/* =====================================================
+   アプリ状態
+   ===================================================== */
+
+const state = {
+
+  exhibitions: [],
+
+  companies: [],
+
+  visits: new Map(),
+
+  selectedCompany: null,
+
+  filter: "all"
+
+};
+
+
+/* =====================================================
+   初期化
+   ===================================================== */
+
+async function init() {
+
+  if (
+    SUPABASE_URL.includes("ここに") ||
+    SUPABASE_PUBLISHABLE_KEY.includes("ここに")
+  ) {
+
+    showStatus(
+      "SupabaseのURLとPublishable keyを設定してください。",
+      true
+    );
+
+    return;
+  }
+
+  await loadExhibitions();
+
+}
+
+
+/* =====================================================
+   展示会取得
+   ===================================================== */
+
+async function loadExhibitions() {
+
+  const result =
+    await db
+      .from("exhibitions")
+      .select(
+        "id,name,event_date,location"
+      )
+      .order(
+        "event_date",
+        { ascending: false }
+      );
+
+
+  if (result.error) {
+
+    showStatus(
+      "展示会の読み込みに失敗しました：" +
+      result.error.message,
+      true
+    );
+
+    return;
+  }
+
+
+  state.exhibitions =
+    result.data || [];
+
+
+  const select =
+    document.getElementById(
+      "exhibitionSelect"
+    );
+
+
+  select.innerHTML = "";
+
+
+  if (
+    state.exhibitions.length === 0
+  ) {
+
+    select.innerHTML =
+      '<option value="">展示会がありません</option>';
+
+    updateStats();
+
+    return;
+
+  }
+
+
+  state.exhibitions.forEach(
+    exhibition => {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+      option.value =
+        exhibition.id;
+
+      option.textContent =
+        exhibition.name +
+        (
+          exhibition.event_date
+            ? "　" +
+              exhibition.event_date
+            : ""
+        );
+
+      select.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  select.value =
+    state.exhibitions[0].id;
+
+
+  await loadCompanies();
+
+}
+
+
+/* =====================================================
+   会社取得
+   ===================================================== */
+
+async function loadCompanies() {
+
+  const exhibitionId =
+    document.getElementById(
+      "exhibitionSelect"
+    ).value;
+
+
+  if (!exhibitionId) {
+
+    state.companies = [];
+
+    state.visits.clear();
+
+    renderCompanies();
+
+    return;
+
+  }
+
+
+  const result =
+    await db
+      .from("companies")
+      .select(
+        "id,exhibition_id,company_name,booth,category,website"
+      )
+      .eq(
+        "exhibition_id",
+        exhibitionId
+      )
+      .order(
+        "company_name"
+      );
+
+
+  if (result.error) {
+
+    showStatus(
+      "会社情報の読み込みに失敗しました：" +
+      result.error.message,
+      true
+    );
+
+    return;
+
+  }
+
+
+  state.companies =
+    result.data || [];
+
+
+  await loadVisits();
+
+
+  renderCompanies();
+
+}
+
+
+/* =====================================================
+   訪問情報取得
+   ===================================================== */
+
+async function loadVisits() {
+
+  state.visits.clear();
+
+
+  const companyIds =
+    state.companies.map(
+      company => company.id
+    );
+
+
+  if (companyIds.length === 0) {
+    return;
+  }
+
+
+  const result =
+    await db
+      .from("visits")
+      .select(
+        "id,company_id,visited_at,rating,contact_person,comment,next_action"
+      )
+      .in(
+        "company_id",
+        companyIds
+      )
+      .order(
+        "visited_at",
+        { ascending: false }
+      );
+
+
+  if (result.error) {
+
+    showStatus(
+      "訪問情報の読み込みに失敗しました：" +
+      result.error.message,
+      true
+    );
+
+    return;
+
+  }
+
+
+  (result.data || [])
+    .forEach(visit => {
+
+      if (
+        !state.visits.has(
+          visit.company_id
+        )
+      ) {
+
+        state.visits.set(
+          visit.company_id,
+          visit
+        );
+
+      }
+
+    });
+
+}
+
+
+/* =====================================================
+   会社一覧表示
+   ===================================================== */
+
+function renderCompanies() {
+
+  const list =
+    document.getElementById(
+      "companyList"
+    );
+
+
+  const search =
+    document
+      .getElementById("search")
+      .value
+      .toLowerCase();
+
+
+  const filtered =
+    state.companies.filter(
+      company => {
+
+        const visit =
+          state.visits.get(
+            company.id
+          );
+
+
+        const visited =
+          visit &&
+          visit.visited_at;
+
+
+        if (
+          state.filter === "visited" &&
+          !visited
+        ) {
+          return false;
+        }
+
+
+        if (
+          state.filter === "unvisited" &&
+          visited
+        ) {
+          return false;
+        }
+
+
+        const text =
+          (
+            company.company_name +
+            " " +
+            (company.booth || "") +
+            " " +
+            (company.category || "")
+          )
+          .toLowerCase();
+
+
+        return text.includes(
+          search
+        );
+
+      }
+    );
+
+
+  if (
+    filtered.length === 0
+  ) {
+
+    list.innerHTML =
+      '<div class="empty">会社がありません</div>';
+
+    updateStats();
+
+    return;
+
+  }
+
+
+  list.innerHTML =
+    filtered
+      .map(company => {
+
+        const visit =
+          state.visits.get(
+            company.id
+          );
+
+
+        const visited =
+          visit &&
+          visit.visited_at;
+
+
+        const rating =
+          visit &&
+          visit.rating
+            ? "　" +
+              "★".repeat(
+                visit.rating
+              )
+            : "";
+
+
+        const visitedText =
+          visited
+            ? "訪問済み　" +
+              formatDateTime(
+                visit.visited_at
+              )
+            : "未訪問";
+
+
+        return `
+
+          <div
+            class="company-card ${visited ? "visited" : ""}"
+            data-company-id="${company.id}"
+          >
+
+            <div class="company-top">
+
+              <div class="check">
+                ${visited ? "✅" : "⬜"}
+              </div>
+
+              <div>
+
+                <div class="company-name">
+                  ${escapeHtml(
+                    company.company_name
+                  )}
+                </div>
+
+                <div class="company-meta">
+
+                  ${
+                    company.booth
+                      ? "ブース：" +
+                        escapeHtml(
+                          company.booth
+                        )
+                      : ""
+                  }
+
+                  ${
+                    company.category
+                      ? "　" +
+                        escapeHtml(
+                          company.category
+                        )
+                      : ""
+                  }
+
+                </div>
+
+                <div class="visit-info">
+
+                  ${visitedText}
+
+                  ${rating}
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        `;
+
+      })
+      .join("");
+
+
+  document
+    .querySelectorAll(
+      ".company-card"
+    )
+    .forEach(card => {
+
+      card.addEventListener(
+        "click",
+        () => {
+
+          const id =
+            Number(
+              card.dataset.companyId
+            );
+
+          openCompany(id);
+
+        }
+      );
+
+    });
+
+
+  updateStats();
+
+}
+
+
+/* =====================================================
+   統計
+   ===================================================== */
+
+function updateStats() {
+
+  const total =
+    state.companies.length;
+
+
+  const visited =
+    state.companies.filter(
+      company => {
+
+        const visit =
+          state.visits.get(
+            company.id
+          );
+
+        return (
+          visit &&
+          visit.visited_at
+        );
+
+      }
+    ).length;
+
+
+  document.getElementById(
+    "stats"
+  ).textContent =
+    `訪問済み ${visited} / ${total} 社`;
+
+}
+
+
+/* =====================================================
+   展示会追加画面
+   ===================================================== */
+
+function openExhibitionModal() {
+
+  document.getElementById(
+    "newExhibitionName"
+  ).value = "";
+
+  document.getElementById(
+    "newExhibitionDate"
+  ).value = "";
+
+  document.getElementById(
+    "newExhibitionLocation"
+  ).value = "";
+
+
+  document.getElementById(
+    "exhibitionModal"
+  ).style.display = "block";
+
+}
+
+
+function closeExhibitionModal() {
+
+  document.getElementById(
+    "exhibitionModal"
+  ).style.display = "none";
+
+}
+
+
+/* =====================================================
+   展示会登録
+   ===================================================== */
+
+async function addExhibition() {
+
+  const name =
+    document.getElementById(
+      "newExhibitionName"
+    ).value.trim();
+
+
+  const eventDate =
+    document.getElementById(
+      "newExhibitionDate"
+    ).value;
+
+
+  const location =
+    document.getElementById(
+      "newExhibitionLocation"
+    ).value.trim();
+
+
+  if (!name) {
+
+    alert(
+      "展示会名を入力してください。"
+    );
+
+    return;
+
+  }
+
+
+  const result =
+    await db
+      .from("exhibitions")
+      .insert({
+
+        name: name,
+
+        event_date:
+          eventDate || null,
+
+        location:
+          location || null
+
+      })
+      .select()
+      .single();
+
+
+  if (result.error) {
+
+    alert(
+      "展示会の登録に失敗しました。\n" +
+      result.error.message
+    );
+
+    return;
+
+  }
+
+
+  closeExhibitionModal();
+
+
+  await loadExhibitions();
+
+
+  document.getElementById(
+    "exhibitionSelect"
+  ).value =
+    result.data.id;
+
+
+  await loadCompanies();
+
+
+  showStatus(
+    "展示会を登録しました。"
+  );
+
+}
+
+
+/* =====================================================
+   訪問先追加画面
+   ===================================================== */
+
+function openCompanyModal() {
+
+  const exhibitionId =
+    document.getElementById(
+      "exhibitionSelect"
+    ).value;
+
+
+  if (!exhibitionId) {
+
+    alert(
+      "先に展示会を選択してください。"
+    );
+
+    return;
+
+  }
+
+
+  document.getElementById(
+    "newCompanyName"
+  ).value = "";
+
+  document.getElementById(
+    "newCompanyBooth"
+  ).value = "";
+
+  document.getElementById(
+    "newCompanyCategory"
+  ).value = "";
+
+  document.getElementById(
+    "newCompanyWebsite"
+  ).value = "";
+
+
+  document.getElementById(
+    "companyModal"
+  ).style.display = "block";
+
+}
+
+
+function closeCompanyModal() {
+
+  document.getElementById(
+    "companyModal"
+  ).style.display = "none";
+
+}
+
+
+/* =====================================================
+   訪問先登録
+   ===================================================== */
+
+async function addCompany() {
+
+  const exhibitionId =
+    document.getElementById(
+      "exhibitionSelect"
+    ).value;
+
+
+  const companyName =
+    document.getElementById(
+      "newCompanyName"
+    ).value.trim();
+
+
+  const booth =
+    document.getElementById(
+      "newCompanyBooth"
+    ).value.trim();
+
+
+  const category =
+    document.getElementById(
+      "newCompanyCategory"
+    ).value.trim();
+
+
+  const website =
+    document.getElementById(
+      "newCompanyWebsite"
+    ).value.trim();
+
+
+  if (!companyName) {
+
+    alert(
+      "会社名を入力してください。"
+    );
+
+    return;
+
+  }
+
+
+  const result =
+    await db
+      .from("companies")
+      .insert({
+
+        exhibition_id:
+          Number(exhibitionId),
+
+        company_name:
+          companyName,
+
+        booth:
+          booth || null,
+
+        category:
+          category || null,
+
+        website:
+          website || null
+
+      });
+
+
+  if (result.error) {
+
+    alert(
+      "会社の登録に失敗しました。\n" +
+      result.error.message
+    );
+
+    return;
+
+  }
+
+
+  closeCompanyModal();
+
+
+  await loadCompanies();
+
+
+  showStatus(
+    "訪問先を登録しました。"
+  );
+
+}
+
+
+/* =====================================================
+   会社詳細
+   ===================================================== */
+
+function openCompany(companyId) {
+
+  const company =
+    state.companies.find(
+      c => c.id === companyId
+    );
+
+
+  if (!company) return;
+
+
+  state.selectedCompany =
+    company;
+
+
+  const visit =
+    state.visits.get(
+      companyId
+    );
+
+
+  document.getElementById(
+    "modalCompanyName"
+  ).textContent =
+    company.company_name;
+
+
+  document.getElementById(
+    "modalCompanyInfo"
+  ).textContent =
+    [
+      company.booth
+        ? "ブース：" +
+          company.booth
+        : "",
+
+      company.category
+        ? "業種：" +
+          company.category
+        : ""
+
+    ]
+    .filter(Boolean)
+    .join("　");
+
+
+  document.getElementById(
+    "visitedCheck"
+  ).checked =
+    !!(
+      visit &&
+      visit.visited_at
+    );
+
+
+  document.getElementById(
+    "visitedAt"
+  ).value =
+    visit &&
+    visit.visited_at
+      ? toLocalInputValue(
+          visit.visited_at
+        )
+      : getNowLocal();
+
+
+  document.getElementById(
+    "rating"
+  ).value =
+    visit &&
+    visit.rating
+      ? visit.rating
+      : "";
+
+
+  document.getElementById(
+    "contactPerson"
+  ).value =
+    visit &&
+    visit.contact_person
+      ? visit.contact_person
+      : "";
+
+
+  document.getElementById(
+    "nextAction"
+  ).value =
+    visit &&
+    visit.next_action
+      ? visit.next_action
+      : "";
+
+
+  document.getElementById(
+    "comment"
+  ).value =
+    visit &&
+    visit.comment
+      ? visit.comment
+      : "";
+
+
+  document.getElementById(
+    "detailModal"
+  ).style.display =
+    "block";
+
+}
+
+
+function closeDetailModal() {
+
+  document.getElementById(
+    "detailModal"
+  ).style.display =
+    "none";
+
+  state.selectedCompany =
+    null;
+
+}
+
+
+/* =====================================================
+   訪問記録保存
+   ===================================================== */
+
+async function saveVisit() {
+
+  const company =
+    state.selectedCompany;
+
+
+  if (!company) return;
+
+
+  const visited =
+    document.getElementById(
+      "visitedCheck"
+    ).checked;
+
+
+  const visitedAtInput =
+    document.getElementById(
+      "visitedAt"
+    ).value;
+
+
+  const existing =
+    state.visits.get(
+      company.id
+    );
+
+
+  const record = {
+
+    company_id:
+      company.id,
+
+    visited_at:
+      visited
+        ? (
+            visitedAtInput
+              ? new Date(
+                  visitedAtInput
+                ).toISOString()
+              : new Date()
+                  .toISOString()
+          )
+        : null,
+
+    rating:
+      document.getElementById(
+        "rating"
+      ).value
+        ? Number(
+            document.getElementById(
+              "rating"
+            ).value
+          )
+        : null,
+
+    contact_person:
+      document.getElementById(
+        "contactPerson"
+      ).value.trim(),
+
+    comment:
+      document.getElementById(
+        "comment"
+      ).value.trim(),
+
+    next_action:
+      document.getElementById(
+        "nextAction"
+      ).value
+
+  };
+
+
+  let result;
+
+
+  if (existing) {
+
+    result =
+      await db
+        .from("visits")
+        .update(record)
+        .eq(
+          "id",
+          existing.id
+        );
+
+  } else {
+
+    if (!visited) {
+
+      closeDetailModal();
+
+      return;
+
+    }
+
+
+    result =
+      await db
+        .from("visits")
+        .insert(record);
+
+  }
+
+
+  if (result.error) {
+
+    alert(
+      "保存に失敗しました。\n" +
+      result.error.message
+    );
+
+    return;
+
+  }
+
+
+  closeDetailModal();
+
+
+  await loadCompanies();
+
+
+  showStatus(
+    "訪問記録を保存しました。"
+  );
+
+}
+
+
+/* =====================================================
+   CSV一括登録
+   ===================================================== */
+let csvRows = [];
+function openCsvModal() {
+  const exhibitionId = document.getElementById("exhibitionSelect").value;
+  if (!exhibitionId) { alert("先に展示会を選択してください。"); return; }
+  csvRows = [];
+  document.getElementById("csvFile").value = "";
+  document.getElementById("csvSummary").innerHTML = "";
+  document.getElementById("csvPreview").innerHTML = "";
+  const button = document.getElementById("csvImportButton");
+  button.disabled = true; button.textContent = "登録する";
+  document.getElementById("csvModal").style.display = "block";
+}
+function closeCsvModal() { document.getElementById("csvModal").style.display = "none"; csvRows = []; }
+function downloadCsvTemplate() {
+  const csv = "\uFEFF会社名,ブース,カテゴリー,Webサイト\nサンプル株式会社,A-10,AI・画像認識,https://example.com\nABC株式会社,A-11,SaaS,https://example.com\n";
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob); const a = document.createElement("a");
+  a.href=url; a.download="expo-log-company-template.csv"; a.click(); URL.revokeObjectURL(url);
+}
+function parseCsv(text) {
+  text=text.replace(/^\uFEFF/,""); const rows=[]; let row=[], field="", inQuotes=false;
+  for(let i=0;i<text.length;i++){ const c=text[i], next=text[i+1];
+    if(inQuotes){ if(c==='"'&&next==='"'){field+='"';i++;} else if(c==='"'){inQuotes=false;} else field+=c; }
+    else { if(c==='"') inQuotes=true; else if(c===','){row.push(field);field="";} else if(c==='\r'){if(next==='\n')i++;row.push(field);rows.push(row);row=[];field="";} else if(c==='\n'){row.push(field);rows.push(row);row=[];field="";} else field+=c; }
+  }
+  if(field!==""||row.length){row.push(field);rows.push(row);} return rows.filter(r=>r.some(v=>String(v).trim()!==""));
+}
+function normalizeHeader(value){return String(value||"").trim().replace(/[ 　]/g,"").toLowerCase();}
+function findHeader(headers, aliases){for(const alias of aliases){const i=headers.findIndex(h=>normalizeHeader(h)===normalizeHeader(alias));if(i>=0)return i;}return -1;}
+function parseCompanyCsv(text) {
+  const table=parseCsv(text); if(table.length<2) throw new Error("CSVにデータがありません。");
+  const headers=table[0];
+  const companyIndex=findHeader(headers,["会社名","企業名","company_name","company","name"]);
+  const boothIndex=findHeader(headers,["ブース","ブース番号","booth"]);
+  const categoryIndex=findHeader(headers,["カテゴリー","カテゴリ","業種","category"]);
+  const websiteIndex=findHeader(headers,["Webサイト","ウェブサイト","URL","website","url"]);
+  if(companyIndex<0) throw new Error("「会社名」列が見つかりません。");
+  const rows=[]; let invalid=0;
+  for(let i=1;i<table.length;i++){const r=table[i]; const companyName=String(r[companyIndex]||"").trim(); if(!companyName){invalid++;continue;}
+    rows.push({company_name:companyName,booth:boothIndex>=0?String(r[boothIndex]||"").trim():"",category:categoryIndex>=0?String(r[categoryIndex]||"").trim():"",website:websiteIndex>=0?String(r[websiteIndex]||"").trim():""});}
+  return {rows,invalid};
+}
+async function handleCsvFile(event) {
+  const file=event.target.files[0]; if(!file)return;
+  try { const buffer=await file.arrayBuffer(); let text=new TextDecoder("utf-8").decode(buffer);
+    if(text.includes("\uFFFD")){try{text=new TextDecoder("shift-jis").decode(buffer);}catch(e){}}
+    const result=parseCompanyCsv(text); csvRows=result.rows; if(!csvRows.length)throw new Error("登録できる会社データがありません。");
+    document.getElementById("csvSummary").innerHTML=`<div class="status">${csvRows.length}件を読み込みました。${result.invalid?`会社名が空欄のため ${result.invalid}件を除外しました。`:""}</div>`;
+    renderCsvPreview(); const button=document.getElementById("csvImportButton"); button.disabled=false; button.textContent=`${csvRows.length}件を登録`;
+  } catch(error){csvRows=[];document.getElementById("csvSummary").innerHTML=`<div class="status">CSVの読み込みに失敗しました：${escapeHtml(error.message)}</div>`;document.getElementById("csvPreview").innerHTML="";document.getElementById("csvImportButton").disabled=true;}
+}
+function renderCsvPreview(){let html="<table><thead><tr><th>会社名</th><th>ブース</th><th>カテゴリー</th><th>Webサイト</th></tr></thead><tbody>";
+  csvRows.slice(0,10).forEach(row=>{html+=`<tr><td>${escapeHtml(row.company_name)}</td><td>${escapeHtml(row.booth)}</td><td>${escapeHtml(row.category)}</td><td>${escapeHtml(row.website)}</td></tr>`;});
+  html+="</tbody></table>"; if(csvRows.length>10)html+=`<div style="font-size:12px;color:#6b7280;margin-top:6px;">先頭10件を表示しています。全${csvRows.length}件を登録します。</div>`;
+  document.getElementById("csvPreview").innerHTML=html;
+}
+function normalizeCompanyName(value){return String(value||"").trim().replace(/[ 　]+/g,"").toLowerCase();}
+async function importCsv(){
+  const exhibitionId=document.getElementById("exhibitionSelect").value; if(!exhibitionId){alert("展示会を選択してください。");return;} if(!csvRows.length){alert("CSVデータがありません。");return;}
+  const button=document.getElementById("csvImportButton"); button.disabled=true; button.textContent="登録中...";
+  try{
+    const existingResult=await db.from("companies").select("company_name").eq("exhibition_id",Number(exhibitionId)); if(existingResult.error)throw existingResult.error;
+    const existingNames=new Set((existingResult.data||[]).map(row=>normalizeCompanyName(row.company_name))); const seenInCsv=new Set(); const rowsToInsert=[]; let duplicateCount=0;
+    for(const row of csvRows){const key=normalizeCompanyName(row.company_name); if(existingNames.has(key)||seenInCsv.has(key)){duplicateCount++;continue;} seenInCsv.add(key);
+      rowsToInsert.push({exhibition_id:Number(exhibitionId),company_name:row.company_name,booth:row.booth||null,category:row.category||null,website:row.website||null});}
+    let insertedCount=0; for(let i=0;i<rowsToInsert.length;i+=100){const result=await db.from("companies").insert(rowsToInsert.slice(i,i+100));if(result.error)throw result.error;insertedCount+=Math.min(100,rowsToInsert.length-i);}
+    closeCsvModal(); await loadCompanies(); showStatus(`CSV登録完了：${insertedCount}件登録、${duplicateCount}件スキップ（重複）`);
+  }catch(error){alert("CSV登録に失敗しました。\n"+error.message);button.disabled=false;button.textContent=`${csvRows.length}件を登録`;}
+}
+
+/* =====================================================
+   日付
+   ===================================================== */
+
+function getNowLocal() {
+
+  const now =
+    new Date();
+
+
+  now.setMinutes(
+    now.getMinutes() -
+    now.getTimezoneOffset()
+  );
+
+
+  return now
+    .toISOString()
+    .slice(0, 16);
+
+}
+
+
+function toLocalInputValue(
+  value
+) {
+
+  const date =
+    new Date(value);
+
+
+  date.setMinutes(
+    date.getMinutes() -
+    date.getTimezoneOffset()
+  );
+
+
+  return date
+    .toISOString()
+    .slice(0, 16);
+
+}
+
+
+function formatDateTime(
+  value
+) {
+
+  const date =
+    new Date(value);
+
+
+  return date.toLocaleString(
+    "ja-JP",
+    {
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
+
+}
+
+
+/* =====================================================
+   ステータス
+   ===================================================== */
+
+function showStatus(
+  message,
+  error = false
+) {
+
+  const status =
+    document.getElementById(
+      "status"
+    );
+
+
+  status.className =
+    "status";
+
+
+  status.textContent =
+    message;
+
+
+  if (!error) {
+
+    setTimeout(
+      () => {
+
+        status.textContent =
+          "";
+
+        status.className =
+          "";
+
+      },
+      3000
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   HTMLエスケープ
+   ===================================================== */
+
+function escapeHtml(
+  value
+) {
+
+  if (!value) return "";
+
+
+  return String(value)
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+
+/* =====================================================
+   イベント
+   ===================================================== */
+
+document
+  .getElementById(
+    "exhibitionSelect"
+  )
+  .addEventListener(
+    "change",
+    loadCompanies
+  );
+
+
+document
+  .getElementById(
+    "search"
+  )
+  .addEventListener(
+    "input",
+    renderCompanies
+  );
+
+
+document
+  .querySelectorAll(
+    ".filter-btn"
+  )
+  .forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          document
+            .querySelectorAll(
+              ".filter-btn"
+            )
+            .forEach(
+              b =>
+                b.classList.remove(
+                  "active"
+                )
+            );
+
+
+          button.classList.add(
+            "active"
+          );
+
+
+          state.filter =
+            button.dataset.filter;
+
+
+          renderCompanies();
+
+        }
+      );
+
+    }
+  );
+
+
+init();
+
+</script>
+
+</body>
+</html>
