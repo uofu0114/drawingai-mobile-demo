@@ -171,6 +171,22 @@ textarea {
   margin-top: 5px;
 }
 
+.prospect-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.prospect-a { background: #fee2e2; color: #991b1b; }
+.prospect-b { background: #ffedd5; color: #9a3412; }
+.prospect-c { background: #fef3c7; color: #92400e; }
+.prospect-d { background: #f3f4f6; color: #4b5563; }
+
 .visit-info {
   margin-top: 8px;
   font-size: 13px;
@@ -242,11 +258,90 @@ textarea {
   color: #6b7280;
 }
 
+
+.followup-panel {
+  border-left: 5px solid #f59e0b;
+}
+
+.followup-summary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.followup-count {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.followup-list {
+  display: grid;
+  gap: 8px;
+}
+
+.followup-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.followup-company {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.followup-meta {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.followup-action {
+  color: #92400e;
+  font-weight: 700;
+}
+
+.followup-open {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #111827;
+  color: white;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+@media (max-width: 699px) {
+  .followup-item {
+    grid-template-columns: 1fr;
+  }
+  .followup-open {
+    width: 100%;
+  }
+}
+
 @media (min-width: 700px) {
   .container {
     padding: 25px;
   }
 }
+
+.csv-help { font-size:13px; color:#6b7280; line-height:1.6; background:#f9fafb; padding:10px; border-radius:8px; margin-bottom:12px; }
+.csv-preview { overflow-x:auto; margin-top:12px; }
+.csv-preview table { width:100%; border-collapse:collapse; font-size:13px; }
+.csv-preview th, .csv-preview td { border:1px solid #e5e7eb; padding:7px; text-align:left; white-space:nowrap; }
+.csv-preview th { background:#f3f4f6; }
 </style>
 </head>
 
@@ -292,12 +387,34 @@ textarea {
         ＋ 訪問先を追加
       </button>
 
+      <button
+        class="btn btn-secondary"
+        onclick="openCsvModal()">
+        📥 CSVから一括登録
+      </button>
+
     </div>
 
   </div>
 
 
   <div id="status"></div>
+
+
+  <!-- =============================
+       展示会終了後フォローアップ
+       ============================= -->
+  <div class="panel followup-panel" id="followupPanel">
+
+    <div class="section-title">📌 展示会終了後のフォローアップ</div>
+
+    <div class="followup-summary" id="followupSummary">
+      読み込み中...
+    </div>
+
+    <div class="followup-list" id="followupList"></div>
+
+  </div>
 
 
   <!-- 検索・フィルター -->
@@ -490,6 +607,36 @@ textarea {
 
 
 <!-- =============================
+     CSV一括登録モーダル
+     ============================= -->
+<div class="modal-bg" id="csvModal">
+  <div class="modal">
+    <span class="close-x" onclick="closeCsvModal()">×</span>
+    <h2>📥 CSVから一括登録</h2>
+    <div class="csv-help">
+      1行目を見出しにしてください。<br>
+      必須：<strong>会社名</strong><br>
+      任意：ブース、カテゴリー、Webサイト<br>
+      Excelの場合は「CSV UTF-8（コンマ区切り）」で保存してください。
+    </div>
+    <div class="modal-buttons" style="margin-top:0;margin-bottom:12px;">
+      <button class="btn btn-secondary" onclick="downloadCsvTemplate()">CSVテンプレート</button>
+    </div>
+    <div class="form-group">
+      <label>CSVファイル</label>
+      <input type="file" id="csvFile" accept=".csv,text/csv" onchange="handleCsvFile(event)">
+    </div>
+    <div id="csvSummary"></div>
+    <div id="csvPreview" class="csv-preview"></div>
+    <div class="modal-buttons">
+      <button class="btn btn-secondary" onclick="closeCsvModal()">キャンセル</button>
+      <button class="btn btn-primary" id="csvImportButton" onclick="importCsv()" disabled>登録する</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- =============================
      会社詳細・訪問記録
      ============================= -->
 
@@ -564,6 +711,23 @@ textarea {
         <option value="1">
           ★☆☆☆☆ 興味なし
         </option>
+
+      </select>
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label>有望度</label>
+
+      <select id="prospectLevel">
+
+        <option value="">未設定</option>
+        <option value="A">🔥 A：すぐアプローチ</option>
+        <option value="B">🟠 B：有望</option>
+        <option value="C">🟡 C：情報収集</option>
+        <option value="D">⚪ D：対象外</option>
 
       </select>
 
@@ -818,6 +982,7 @@ async function loadCompanies() {
     state.visits.clear();
 
     renderCompanies();
+    renderFollowups();
 
     return;
 
@@ -1042,6 +1207,19 @@ function renderCompanies() {
             : "";
 
 
+        const prospectLabels = {
+          A: "🔥 A：すぐアプローチ",
+          B: "🟠 B：有望",
+          C: "🟡 C：情報収集",
+          D: "⚪ D：対象外"
+        };
+
+        const prospect =
+          visit && visit.prospect_level
+            ? `<span class="prospect-badge prospect-${String(visit.prospect_level).toLowerCase()}">${prospectLabels[visit.prospect_level] || escapeHtml(visit.prospect_level)}</span>`
+            : "";
+
+
         const visitedText =
           visited
             ? "訪問済み　" +
@@ -1102,6 +1280,8 @@ function renderCompanies() {
 
                 </div>
 
+                ${prospect}
+
               </div>
 
             </div>
@@ -1138,7 +1318,83 @@ function renderCompanies() {
 
 
   updateStats();
+  renderFollowups();
 
+}
+
+
+/* =====================================================
+   フォローアップ一覧
+   ===================================================== */
+
+function renderFollowups() {
+
+  const summary = document.getElementById("followupSummary");
+  const list = document.getElementById("followupList");
+
+  if (!summary || !list) return;
+
+  const followups = state.companies
+    .map(company => ({
+      company,
+      visit: state.visits.get(company.id)
+    }))
+    .filter(item => {
+      const visit = item.visit;
+      if (!visit || !visit.visited_at) return false;
+
+      // A/Bランク、または次のアクションが設定されている会社を対象にする
+      return (
+        visit.prospect_level === "A" ||
+        visit.prospect_level === "B" ||
+        !!visit.next_action
+      );
+    })
+    .sort((a, b) => {
+      const rank = { A: 1, B: 2, C: 3, D: 4 };
+      const ar = rank[a.visit.prospect_level] || 9;
+      const br = rank[b.visit.prospect_level] || 9;
+      if (ar !== br) return ar - br;
+      return new Date(b.visit.visited_at) - new Date(a.visit.visited_at);
+    });
+
+  const aCount = followups.filter(x => x.visit.prospect_level === "A").length;
+  const bCount = followups.filter(x => x.visit.prospect_level === "B").length;
+  const actionCount = followups.filter(x => !!x.visit.next_action).length;
+
+  summary.innerHTML = `
+    <span class="followup-count">📌 ${followups.length}社</span>
+    <span class="followup-count">🔥 Aランク ${aCount}社</span>
+    <span class="followup-count">🟠 Bランク ${bCount}社</span>
+    <span class="followup-count">➡️ アクションあり ${actionCount}社</span>
+  `;
+
+  if (!followups.length) {
+    list.innerHTML = '<div class="empty">まだフォローアップ対象の会社はありません。訪問後に「有望度」または「次のアクション」を設定してください。</div>';
+    return;
+  }
+
+  const labels = {
+    A: "🔥 A：すぐアプローチ",
+    B: "🟠 B：有望",
+    C: "🟡 C：情報収集",
+    D: "⚪ D：対象外"
+  };
+
+  list.innerHTML = followups.map(({ company, visit }) => `
+    <div class="followup-item">
+      <div>
+        <div class="followup-company">${escapeHtml(company.company_name)}</div>
+        <div class="followup-meta">
+          ${visit.prospect_level ? `<span class="prospect-badge prospect-${String(visit.prospect_level).toLowerCase()}">${labels[visit.prospect_level]}</span>` : ""}
+          ${company.booth ? `　ブース：${escapeHtml(company.booth)}` : ""}
+          ${visit.contact_person ? `　担当：${escapeHtml(visit.contact_person)}` : ""}
+          ${visit.next_action ? `<br><span class="followup-action">➡️ 次のアクション：${escapeHtml(visit.next_action)}</span>` : ""}
+        </div>
+      </div>
+      <button class="followup-open" onclick="openCompany(${company.id})">詳細・記録</button>
+    </div>
+  `).join("");
 }
 
 
@@ -1170,10 +1426,16 @@ function updateStats() {
     ).length;
 
 
+  const aRank =
+    state.companies.filter(company => {
+      const visit = state.visits.get(company.id);
+      return visit && visit.prospect_level === "A";
+    }).length;
+
   document.getElementById(
     "stats"
   ).textContent =
-    `訪問済み ${visited} / ${total} 社`;
+    `訪問済み ${visited} / ${total} 社　｜　🔥 Aランク ${aRank}社`;
 
 }
 
@@ -1531,6 +1793,15 @@ function openCompany(companyId) {
 
 
   document.getElementById(
+    "prospectLevel"
+  ).value =
+    visit &&
+    visit.prospect_level
+      ? visit.prospect_level
+      : "";
+
+
+  document.getElementById(
     "contactPerson"
   ).value =
     visit &&
@@ -1637,6 +1908,11 @@ async function saveVisit() {
           )
         : null,
 
+    prospect_level:
+      document.getElementById(
+        "prospectLevel"
+      ).value || null,
+
     contact_person:
       document.getElementById(
         "contactPerson"
@@ -1712,6 +1988,79 @@ async function saveVisit() {
 
 }
 
+
+/* =====================================================
+   CSV一括登録
+   ===================================================== */
+let csvRows = [];
+function openCsvModal() {
+  const exhibitionId = document.getElementById("exhibitionSelect").value;
+  if (!exhibitionId) { alert("先に展示会を選択してください。"); return; }
+  csvRows = [];
+  document.getElementById("csvFile").value = "";
+  document.getElementById("csvSummary").innerHTML = "";
+  document.getElementById("csvPreview").innerHTML = "";
+  const button = document.getElementById("csvImportButton");
+  button.disabled = true; button.textContent = "登録する";
+  document.getElementById("csvModal").style.display = "block";
+}
+function closeCsvModal() { document.getElementById("csvModal").style.display = "none"; csvRows = []; }
+function downloadCsvTemplate() {
+  const csv = "\uFEFF会社名,ブース,カテゴリー,Webサイト\nサンプル株式会社,A-10,AI・画像認識,https://example.com\nABC株式会社,A-11,SaaS,https://example.com\n";
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob); const a = document.createElement("a");
+  a.href=url; a.download="expo-log-company-template.csv"; a.click(); URL.revokeObjectURL(url);
+}
+function parseCsv(text) {
+  text=text.replace(/^\uFEFF/,""); const rows=[]; let row=[], field="", inQuotes=false;
+  for(let i=0;i<text.length;i++){ const c=text[i], next=text[i+1];
+    if(inQuotes){ if(c==='"'&&next==='"'){field+='"';i++;} else if(c==='"'){inQuotes=false;} else field+=c; }
+    else { if(c==='"') inQuotes=true; else if(c===','){row.push(field);field="";} else if(c==='\r'){if(next==='\n')i++;row.push(field);rows.push(row);row=[];field="";} else if(c==='\n'){row.push(field);rows.push(row);row=[];field="";} else field+=c; }
+  }
+  if(field!==""||row.length){row.push(field);rows.push(row);} return rows.filter(r=>r.some(v=>String(v).trim()!==""));
+}
+function normalizeHeader(value){return String(value||"").trim().replace(/[ 　]/g,"").toLowerCase();}
+function findHeader(headers, aliases){for(const alias of aliases){const i=headers.findIndex(h=>normalizeHeader(h)===normalizeHeader(alias));if(i>=0)return i;}return -1;}
+function parseCompanyCsv(text) {
+  const table=parseCsv(text); if(table.length<2) throw new Error("CSVにデータがありません。");
+  const headers=table[0];
+  const companyIndex=findHeader(headers,["会社名","企業名","company_name","company","name"]);
+  const boothIndex=findHeader(headers,["ブース","ブース番号","booth"]);
+  const categoryIndex=findHeader(headers,["カテゴリー","カテゴリ","業種","category"]);
+  const websiteIndex=findHeader(headers,["Webサイト","ウェブサイト","URL","website","url"]);
+  if(companyIndex<0) throw new Error("「会社名」列が見つかりません。");
+  const rows=[]; let invalid=0;
+  for(let i=1;i<table.length;i++){const r=table[i]; const companyName=String(r[companyIndex]||"").trim(); if(!companyName){invalid++;continue;}
+    rows.push({company_name:companyName,booth:boothIndex>=0?String(r[boothIndex]||"").trim():"",category:categoryIndex>=0?String(r[categoryIndex]||"").trim():"",website:websiteIndex>=0?String(r[websiteIndex]||"").trim():""});}
+  return {rows,invalid};
+}
+async function handleCsvFile(event) {
+  const file=event.target.files[0]; if(!file)return;
+  try { const buffer=await file.arrayBuffer(); let text=new TextDecoder("utf-8").decode(buffer);
+    if(text.includes("\uFFFD")){try{text=new TextDecoder("shift-jis").decode(buffer);}catch(e){}}
+    const result=parseCompanyCsv(text); csvRows=result.rows; if(!csvRows.length)throw new Error("登録できる会社データがありません。");
+    document.getElementById("csvSummary").innerHTML=`<div class="status">${csvRows.length}件を読み込みました。${result.invalid?`会社名が空欄のため ${result.invalid}件を除外しました。`:""}</div>`;
+    renderCsvPreview(); const button=document.getElementById("csvImportButton"); button.disabled=false; button.textContent=`${csvRows.length}件を登録`;
+  } catch(error){csvRows=[];document.getElementById("csvSummary").innerHTML=`<div class="status">CSVの読み込みに失敗しました：${escapeHtml(error.message)}</div>`;document.getElementById("csvPreview").innerHTML="";document.getElementById("csvImportButton").disabled=true;}
+}
+function renderCsvPreview(){let html="<table><thead><tr><th>会社名</th><th>ブース</th><th>カテゴリー</th><th>Webサイト</th></tr></thead><tbody>";
+  csvRows.slice(0,10).forEach(row=>{html+=`<tr><td>${escapeHtml(row.company_name)}</td><td>${escapeHtml(row.booth)}</td><td>${escapeHtml(row.category)}</td><td>${escapeHtml(row.website)}</td></tr>`;});
+  html+="</tbody></table>"; if(csvRows.length>10)html+=`<div style="font-size:12px;color:#6b7280;margin-top:6px;">先頭10件を表示しています。全${csvRows.length}件を登録します。</div>`;
+  document.getElementById("csvPreview").innerHTML=html;
+}
+function normalizeCompanyName(value){return String(value||"").trim().replace(/[ 　]+/g,"").toLowerCase();}
+async function importCsv(){
+  const exhibitionId=document.getElementById("exhibitionSelect").value; if(!exhibitionId){alert("展示会を選択してください。");return;} if(!csvRows.length){alert("CSVデータがありません。");return;}
+  const button=document.getElementById("csvImportButton"); button.disabled=true; button.textContent="登録中...";
+  try{
+    const existingResult=await db.from("companies").select("company_name").eq("exhibition_id",Number(exhibitionId)); if(existingResult.error)throw existingResult.error;
+    const existingNames=new Set((existingResult.data||[]).map(row=>normalizeCompanyName(row.company_name))); const seenInCsv=new Set(); const rowsToInsert=[]; let duplicateCount=0;
+    for(const row of csvRows){const key=normalizeCompanyName(row.company_name); if(existingNames.has(key)||seenInCsv.has(key)){duplicateCount++;continue;} seenInCsv.add(key);
+      rowsToInsert.push({exhibition_id:Number(exhibitionId),company_name:row.company_name,booth:row.booth||null,category:row.category||null,website:row.website||null});}
+    let insertedCount=0; for(let i=0;i<rowsToInsert.length;i+=100){const result=await db.from("companies").insert(rowsToInsert.slice(i,i+100));if(result.error)throw result.error;insertedCount+=Math.min(100,rowsToInsert.length-i);}
+    closeCsvModal(); await loadCompanies(); showStatus(`CSV登録完了：${insertedCount}件登録、${duplicateCount}件スキップ（重複）`);
+  }catch(error){alert("CSV登録に失敗しました。\n"+error.message);button.disabled=false;button.textContent=`${csvRows.length}件を登録`;}
+}
 
 /* =====================================================
    日付
